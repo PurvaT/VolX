@@ -2,7 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, BarChart3, Plus } from 'lucide-react';
-import type { TooltipProps } from 'recharts';
+import Card from '../assets/common/card';
+import Button from 'app/assets/common/button';
+import List from 'app/assets/common/list';
 
 export interface Trade {
   id: number;
@@ -138,42 +140,49 @@ const VolatilityTradingPlatform = () => {
   const totalPnL = trades.reduce((sum, trade) => sum + calculatePnL(trade), 0);
 
   // Custom candlestick tooltip component for recharts
-  // const CandlestickTooltip: React.FC<TooltipProps<number, string>> = ({ active}) => {
-  //   if (active && payload && payload.length) {
-  //     // Use selectedTimeframe from closure
-  //     const timeframe = selectedTimeframe;
-  //     const openKey = 'vol' + timeframe + '_open';
-  //     const highKey = 'vol' + timeframe + '_high';
-  //     const lowKey = 'vol' + timeframe + '_low';
-  //     const closeKey = 'vol' + timeframe + '_close';
+  const CandlestickTooltip = ({ active, payload, label }: {
+    active?: boolean;
+    payload?: Array<{
+      payload: {
+        [key: string]: any;
+      };
+    }>;
+    label?: string;
+  }) => {
+    if (active && payload && payload.length) {
+      const timeframe = selectedTimeframe;
+      const openKey = 'vol' + timeframe + '_open';
+      const highKey = 'vol' + timeframe + '_high';
+      const lowKey = 'vol' + timeframe + '_low';
+      const closeKey = 'vol' + timeframe + '_close';
 
-  //     const data = payload[0].payload;
-  //     return (
-  //       <div className="bg-gray-800 p-3 rounded-lg border border-gray-600">
-  //         <p className="font-semibold mb-2">{label} - {timeframe.toUpperCase()} Annualized</p>
-  //         <div className="space-y-1 text-sm">
-  //           <div className="flex justify-between gap-4">
-  //             <span className="text-gray-400">Open:</span>
-  //             <span className="text-white">{data[openKey]}%</span>
-  //           </div>
-  //           <div className="flex justify-between gap-4">
-  //             <span className="text-gray-400">High:</span>
-  //             <span className="text-green-400">{data[highKey]}%</span>
-  //           </div>
-  //           <div className="flex justify-between gap-4">
-  //             <span className="text-gray-400">Low:</span>
-  //             <span className="text-red-400">{data[lowKey]}%</span>
-  //           </div>
-  //           <div className="flex justify-between gap-4">
-  //             <span className="text-gray-400">Close:</span>
-  //             <span className="text-white font-semibold">{data[closeKey]}%</span>
-  //           </div>
-  //         </div>
-  //       </div>
-  //     );
-  //   }
-  //   return null;
-  // };
+      const data = payload[0].payload;
+      return (
+        <div className="bg-gray-800 p-3 rounded-lg border border-gray-600">
+          <p className="font-semibold mb-2">{label} - {timeframe.toUpperCase()} Annualized</p>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between gap-4">
+              <span className="text-gray-400">Open:</span>
+              <span className="text-white">{data[openKey]}%</span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-gray-400">High:</span>
+              <span className="text-green-400">{data[highKey]}%</span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-gray-400">Low:</span>
+              <span className="text-red-400">{data[lowKey]}%</span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-gray-400">Close:</span>
+              <span className="text-white font-semibold">{data[closeKey]}%</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
 
   const getNotionalValue = () => {
     const lots = tradeForm.lots || 0;
@@ -195,68 +204,36 @@ const VolatilityTradingPlatform = () => {
           </h1>
           <p className="text-gray-300">Trade Bitcoin volatility with real-time data and analytics</p>
         </div>
-
-        {/* Current Volatility Display */}
-        <div className="bg-gray-900/50 backdrop-blur rounded-xl p-6 mb-8 border border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Current BTC Volatility</h2>
-            <button
-              onClick={() => setShowTradeModal(true)}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              New Trade
-            </button>
-          </div>
-          
-          <div className="flex items-center gap-8">
-            <div>
-              <div className="text-sm text-gray-400 mb-1">7-Day Annualized</div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-blue-400">{currentVol7d.toFixed(2)}%</span>
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-400 mb-1">30-Day Annualized</div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-green-400">{currentVol30d.toFixed(2)}%</span>
-              </div>
-            </div>
-            <BarChart3 className="w-8 h-8 text-purple-400 ml-auto" />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Historical Volatility Chart */}
-          <div className="bg-gray-900/50 backdrop-blur rounded-xl p-6 border border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold">Historical Volatility (Last 60 Days)</h3>
-              <div className="flex gap-2">
-                <button
+        
+        <div className="flex gap-4 mb-8">
+          <div className="w-1/2">
+            <Card cardTitle='Historical Volatility (Last 60 Days)' description={
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex gap-2">
+                <Button
+                  buttonTitle='7D'
                   onClick={() => setSelectedTimeframe('7d')}
                   className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                     selectedTimeframe === '7d' 
                       ? 'bg-blue-500 text-white' 
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
-                >
-                  7D
-                </button>
-                <button
+                />
+                <Button
+                  buttonTitle='30D'
                   onClick={() => setSelectedTimeframe('30d')}
                   className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                     selectedTimeframe === '30d' 
                       ? 'bg-green-500 text-white' 
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
-                >
-                  30D
-                </button>
+                />
               </div>
             </div>
             
             {/* Chart with candlestick visualization */}
-            <div className="h-64">
+            <div className="h-64 mt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={historicalData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -275,7 +252,7 @@ const VolatilityTradingPlatform = () => {
                     fontSize={12}
                     domain={['dataMin - 2', 'dataMax + 2']}
                   />
-                  {/* <Tooltip content={<CandlestickTooltip />} /> */}
+                  <Tooltip content={<CandlestickTooltip />} />
                   <Line 
                     type="monotone" 
                     dataKey={'vol' + selectedTimeframe + '_close'}
@@ -303,264 +280,52 @@ const VolatilityTradingPlatform = () => {
                 </LineChart>
               </ResponsiveContainer>
             </div>
+              </div>
+            } />
           </div>
-
-          {/* P&L Summary */}
-          <div className="bg-gray-900/50 backdrop-blur rounded-xl p-6 border border-gray-700">
-            <h3 className="text-xl font-semibold mb-4">Portfolio Summary</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center p-4 bg-gray-700/50 rounded-lg">
-                <span className="text-gray-300">Total P&L</span>
-                <span className={`text-xl font-bold flex items-center gap-1 ${totalPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {totalPnL >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
-                  ${totalPnL.toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-4 bg-gray-700/50 rounded-lg">
-                <span className="text-gray-300">Open Positions</span>
-                <span className="text-xl font-bold text-blue-400">{trades.length}</span>
-              </div>
-              <div className="flex justify-between items-center p-4 bg-gray-700/50 rounded-lg">
-                <span className="text-gray-300">Total Lots</span>
-                <span className="text-xl font-bold text-purple-400">
-                  {trades.reduce((sum, trade) => sum + trade.lots, 0).toFixed(1)} lots
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-4 bg-gray-700/50 rounded-lg">
-                <span className="text-gray-300">Total Exposure</span>
-                <span className="text-xl font-bold text-orange-400">
-                  ${(trades.reduce((sum, trade) => sum + trade.lots, 0) * 20).toFixed(2)}
-                </span>
-              </div>
-            </div>
+          <div className="w-1/2">
+            <Card 
+              cardTitle='Portfolio Summary'
+              description={
+                  <div className="backdrop-blur rounded-xl p-6 border border-gray-700">
+                  <div className="space-y-4">
+                    <List 
+                      listItems={[
+                        `Total P&L: ${totalPnL.toFixed(2)}%`,
+                        `Open Positions: ${trades.length}`,
+                        `Total Lots: ${trades.reduce((sum, trade) => sum + trade.lots, 0)}`,
+                        `Total Exposure: ${trades.reduce((sum, trade) => sum + trade.lots * trade.leverage * 20, 0)}`
+                      ]}
+                    />
+                  </div>
+                </div>
+              }
+            />
           </div>
         </div>
-
-        {/* Open Trades */}
-        {trades.length > 0 && (
-          <div className="mt-8 bg-gray-900/50 backdrop-blur rounded-xl p-6 border border-gray-700">
-            <h3 className="text-xl font-semibold mb-4">Open Positions</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-600">
-                    <th className="text-left py-3 px-4">Direction</th>
-                    <th className="text-left py-3 px-4">Lots</th>
-                    <th className="text-left py-3 px-4">Leverage</th>
-                    <th className="text-left py-3 px-4">Notional</th>
-                    <th className="text-left py-3 px-4">Timeframe</th>
-                    <th className="text-left py-3 px-4">Strike Vol</th>
-                    <th className="text-left py-3 px-4">Current Vol</th>
-                    <th className="text-left py-3 px-4">P&L</th>
-                    <th className="text-left py-3 px-4">Entry Time</th>
-                    <th className="text-left py-3 px-4">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {trades.map((trade) => {
-                    const pnl = calculatePnL(trade);
-                    const currentVol = trade.timeframe === '7d' ? currentVol7d : currentVol30d;
-                    return (
-                      <tr key={trade.id} className="border-b border-gray-700/50">
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                            trade.direction === 'long' 
-                              ? 'bg-green-500/20 text-green-400' 
-                              : 'bg-red-500/20 text-red-400'
-                          }`}>
-                            {trade.direction.toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">{trade.lots} lots</td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                            trade.leverage === 1 
-                              ? 'bg-gray-500/20 text-gray-400' 
-                              : trade.leverage === 2
-                              ? 'bg-yellow-500/20 text-yellow-400'
-                              : 'bg-red-500/20 text-red-400'
-                          }`}>
-                            {trade.leverage}x
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">${(trade.lots * 20).toFixed(2)}</td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                            trade.timeframe === '7d' 
-                              ? 'bg-blue-500/20 text-blue-400' 
-                              : 'bg-green-500/20 text-green-400'
-                          }`}>
-                            {trade.timeframe.toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">{trade.strikeVol.toFixed(2)}%</td>
-                        <td className="py-3 px-4">{currentVol.toFixed(2)}%</td>
-                        <td className="py-3 px-4">
-                          <span className={`font-semibold ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            ${pnl.toFixed(2)}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-400">{trade.timestamp}</td>
-                        <td className="py-3 px-4">
-                          <button
-                            onClick={() => closeTrade(trade.id)}
-                            className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-3 py-1 rounded text-sm transition-colors"
-                          >
-                            Close
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+      <Card cardClassNames="mb-8" cardTitle='Current BTC Volatility' description={
+        <div className='flex justify-between items-center'>
+          <div className='flex gap-8 items-center'>          
+            <div className="text-sm">
+              <div className="text-gray-400">7-Day Annualized</div>
+              <span className="text-2xl font-bold text-blue-400">{currentVol7d.toFixed(2)}%</span>
+            </div>
+            <div className="text-sm">
+              <div className="text-gray-400">30-Day Annualized</div>
+              <span className="text-2xl font-bold text-green-400">{currentVol30d.toFixed(2)}%</span>
             </div>
           </div>
-        )}
-
-        {/* Trade Modal */}
-        {showTradeModal && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-gray-900 rounded-xl p-6 w-full max-w-md border border-gray-700">
-              <h3 className="text-xl font-semibold mb-4">Place New Trade</h3>
-              <div>
-                <div className="space-y-4">
-                  <div>
-                    <div className="block text-sm font-medium text-gray-300 mb-2">Timeframe</div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setTradeForm({...tradeForm, timeframe: '7d'})}
-                        className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                          tradeForm.timeframe === '7d'
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        }`}
-                      >
-                        7D Annualized
-                      </button>
-                      <button
-                        onClick={() => setTradeForm({...tradeForm, timeframe: '30d'})}
-                        className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                          tradeForm.timeframe === '30d'
-                            ? 'bg-green-500 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        }`}
-                      >
-                        30D Annualized
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="block text-sm font-medium text-gray-300 mb-2">Leverage</div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setTradeForm({...tradeForm, leverage: 1})}
-                        className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                          tradeForm.leverage === 1
-                            ? 'bg-gray-500 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        }`}
-                      >
-                        1x
-                      </button>
-                      <button
-                        onClick={() => setTradeForm({...tradeForm, leverage: 2})}
-                        className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                          tradeForm.leverage === 2
-                            ? 'bg-yellow-500 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        }`}
-                      >
-                        2x
-                      </button>
-                      <button
-                        onClick={() => setTradeForm({...tradeForm, leverage: 5})}
-                        className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                          tradeForm.leverage === 5
-                            ? 'bg-red-500 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        }`}
-                      >
-                        5x
-                      </button>
-                    </div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      Risk Multiplier: {tradeForm.leverage}x volatility movement
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="block text-sm font-medium text-gray-300 mb-2">Direction</div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setTradeForm({...tradeForm, direction: 'long'})}
-                        className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                          tradeForm.direction === 'long'
-                            ? 'bg-green-500 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        }`}
-                      >
-                        Long (Vol Up)
-                      </button>
-                      <button
-                        onClick={() => setTradeForm({...tradeForm, direction: 'short'})}
-                        className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                          tradeForm.direction === 'short'
-                            ? 'bg-red-500 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        }`}
-                      >
-                        Short (Vol Down)
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="block text-sm font-medium text-gray-300 mb-2">Lots (1 lot = $20)</div>
-                    <input
-                      type="number"
-                      value={tradeForm.lots}
-                      onChange={(e) => setTradeForm({...tradeForm, lots: parseFloat(e.target.value)})}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
-                      placeholder="Enter number of lots"
-                      min="0.1"
-                      step="0.1"
-                    />
-                    <div className="text-xs text-gray-400 mt-1">
-                      Notional Value: ${getNotionalValue()} | Effective Exposure: ${getEffectiveExposure()}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="block text-sm font-medium text-gray-300 mb-2">Strike Volatility</div>
-                    <div className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-400">
-                      {tradeForm.timeframe === '7d' ? currentVol7d.toFixed(2) : currentVol30d.toFixed(2)}% ({tradeForm.timeframe} Current)
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => setShowTradeModal(false)}
-                    className="flex-1 py-2 px-4 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleTrade}
-                    className="flex-1 py-2 px-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-lg font-semibold transition-all duration-200"
-                  >
-                    Place Trade
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+          <Button 
+            className='bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2 text-white'
+            buttonTitle="New Trade"
+            buttonIcon={Plus}
+            onClick={() => setShowTradeModal(true)} 
+          />
+        </div>
+      }/>
+        
       </div>
     </div>
-  );
-};
-
+  )
+}
 export default VolatilityTradingPlatform;

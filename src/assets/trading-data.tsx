@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { tradingData } from "../../data";
 import axios from "axios";
-import Card from "app/components/card";
+import Card from "app/assets/common/card";
 
 interface TradingData {
     Close: number,

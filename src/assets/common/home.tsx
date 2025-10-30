@@ -1,10 +1,8 @@
 import Link from 'next/link';
 //import styles from '../../styles/Home.module.css';
-import Card from 'app/components/card';
+import Card from 'app/assets/common/card';
 import { favoriteItems } from '../../../data';
 import { redirect, useRouter } from 'next/navigation';
-import { NextResponse } from 'next/server';
-import Breadcrumb from './breadcrumb';
 
 const Home = () => {
   const router = useRouter();
