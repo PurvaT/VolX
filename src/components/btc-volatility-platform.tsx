@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, BarChart3, Plus } from 'lucide-react';
 import Card from '../assets/common/card';
@@ -18,11 +18,17 @@ export interface Trade {
 }
 
 const VolatilityTradingPlatform = () => {
+  const wsRef = useRef<WebSocket | null>(null);
+
   const [currentVol7d, setCurrentVol7d] = useState(20);
   const [currentVol30d, setCurrentVol30d] = useState(18.5);
   const [selectedTimeframe, setSelectedTimeframe] = useState('7d');
   const [trades, setTrades] = useState<Trade[]>([]);
   const [showTradeModal, setShowTradeModal] = useState(false);
+  const [livePrice, setLivePrice] = useState('');
+  const [stdev, setStdev] = useState('');
+  const [selectedDays, setSelectedDays] = useState(7);
+  const [numSlots, setNumSlots] = useState(1);
   const [tradeForm, setTradeForm] = useState<Trade>({
     direction: 'long',
     lots: 0,
@@ -90,6 +96,50 @@ const VolatilityTradingPlatform = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Initialize WebSocket connection
+  useEffect(() => {
+    try {
+      // Create WebSocket connection
+      wsRef.current = new WebSocket(`ws://localhost:8000/ws/BTC-USD?days=${selectedDays}`);
+
+      // Connection opened
+      wsRef.current.onopen = () => {
+        console.log('Connected to VIX WebSocket');
+      };
+
+      // Listen for messages
+      wsRef.current.onmessage = (event) => {
+        try {
+          const liveData = JSON.parse(event.data);
+          setLivePrice(`$${parseFloat(liveData.Close).toFixed(2)}`);
+          setStdev(`${((liveData.StandardDeviation / liveData.Mean) * 100).toFixed(2)}%`);
+          console.log('Live Price:', liveData);
+        } catch (parseError) {
+          console.warn('Error parsing WebSocket message:', parseError);
+        }
+      };
+
+      // Handle errors
+      wsRef.current.onerror = (error) => {
+        console.warn('WebSocket connection error - using mock data. Server not available at ws://localhost:8000/ws/BTC-USD');
+      };
+
+      // Handle connection closed
+      wsRef.current.onclose = () => {
+        console.log('WebSocket connection closed');
+      };
+    } catch (error) {
+      console.warn('WebSocket initialization error:', error);
+    }
+
+    // Clean up on component unmount
+    return () => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.close();
+      }
+    };
+  }, [selectedDays]); // Reconnect when selectedDays changes
 
   const getCurrentVol = () => selectedTimeframe === '7d' ? currentVol7d : currentVol30d;
 
@@ -203,18 +253,78 @@ const VolatilityTradingPlatform = () => {
             BTC Volatility Trading Platform
           </h1>
           <p className="text-gray-300">Trade Bitcoin volatility with real-time data and analytics</p>
+          <div className="flex gap-2 mt-4">
+            <Button
+              buttonTitle='7D'
+              onClick={() => setSelectedDays(7)}
+              className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors ${
+                selectedDays === 7 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            />
+            <Button
+              buttonTitle='30D'
+              onClick={() => setSelectedDays(30)}
+              className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors ${
+                selectedDays === 30 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            />
+          </div>
         </div>
-        
-        <div className="flex gap-4 mb-8">
-          <div className="w-1/2">
+        <div className="w-full flex gap-4 mb-8">
+        <Card 
+          cardClassNames="mb-8 w-2/5"
+          cardTitle='Live Price'
+          description={
+            <div className="text-3xl font-bold">{livePrice}</div>
+          }
+        />
+        <Card 
+          cardClassNames="mb-8 w-2/5"
+          cardTitle={`Standard Deviation (${selectedDays} Days)`}
+          description={
+            <div className="text-3xl font-bold">{stdev}</div>
+          }
+        />
+        <div className='mb-8 w-1/5 flex flex-col gap-2'>
+          <div className='flex items-center gap-2'>
+            <label className='text-xs font-medium text-gray-300 whitespace-nowrap'>Lot(s)</label>
+            <select
+              value={numSlots}
+              onChange={(e) => setNumSlots(parseInt(e.target.value))}
+              className='bg-gray-700 text-white px-3 py-1 rounded-lg text-xs font-medium border border-gray-600 hover:bg-gray-600 transition-colors flex-1'
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                <option key={num} value={num}>{num}</option>
+              ))}
+            </select>
+          </div>
+          <Button
+            className='bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 px-3 py-3 rounded-lg text-xs font-semibold transition-all duration-200 text-white w-full'
+            buttonTitle="Buy"
+            onClick={() => setShowTradeModal(true)} 
+          />
+          <Button
+            className='bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 px-3 py-3 rounded-lg text-xs font-semibold transition-all duration-200 text-white w-full'
+            buttonTitle="Sell"
+            onClick={() => setShowTradeModal(true)} 
+          />
+        </div>
+        </div>
+
+        <div className="flex gap-4 mb-8 w-full">
+          <div className="w-1/2 min-w-0">
             <Card cardTitle='Historical Volatility (Last 60 Days)' description={
-              <div>
+              <div className="w-full">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex gap-2">
                 <Button
                   buttonTitle='7D'
                   onClick={() => setSelectedTimeframe('7d')}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors ${
                     selectedTimeframe === '7d' 
                       ? 'bg-blue-500 text-white' 
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -223,7 +333,7 @@ const VolatilityTradingPlatform = () => {
                 <Button
                   buttonTitle='30D'
                   onClick={() => setSelectedTimeframe('30d')}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors ${
                     selectedTimeframe === '30d' 
                       ? 'bg-green-500 text-white' 
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -233,8 +343,8 @@ const VolatilityTradingPlatform = () => {
             </div>
             
             {/* Chart with candlestick visualization */}
-            <div className="h-64 mt-4">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-64 mt-4 w-full">
+              <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={historicalData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis 
