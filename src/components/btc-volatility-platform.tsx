@@ -29,6 +29,7 @@ const VolatilityTradingPlatform = () => {
   const [stdev, setStdev] = useState('');
   const [selectedDays, setSelectedDays] = useState(7);
   const [numSlots, setNumSlots] = useState(1);
+  const [accountBalance, setAccountBalance] = useState(1000);
   const [tradeForm, setTradeForm] = useState<Trade>({
     direction: 'long',
     lots: 0,
@@ -86,15 +87,8 @@ const VolatilityTradingPlatform = () => {
 
   // Simulate real-time volatility updates
   useEffect(() => {
-    const interval = setInterval(() => {
-      const change7d = (Math.random() - 0.5) * 1.5; // ±0.75% change
-      const change30d = (Math.random() - 0.5) * 1.2; // ±0.6% change
-      
-      setCurrentVol7d(prev => Math.max(5, Math.min(40, prev + change7d)));
-      setCurrentVol30d(prev => Math.max(5, Math.min(35, prev + change30d)));
-    }, 3000);
-
-    return () => clearInterval(interval);
+    // Removed local simulation - using WebSocket data only
+    return () => {};
   }, []);
 
   // Initialize WebSocket connection
@@ -113,7 +107,17 @@ const VolatilityTradingPlatform = () => {
         try {
           const liveData = JSON.parse(event.data);
           setLivePrice(`$${parseFloat(liveData.Close).toFixed(2)}`);
-          setStdev(`${((liveData.StandardDeviation / liveData.Mean) * 100).toFixed(2)}%`);
+          const stdevValue = ((liveData.StandardDeviation / liveData.Mean) * 100).toFixed(2);
+          setStdev(`${stdevValue}%`);
+          
+          // Update volatility based on selected days
+          const volatilityFromWs = parseFloat(stdevValue);
+          if (selectedDays === 7) {
+            setCurrentVol7d(volatilityFromWs);
+          } else {
+            setCurrentVol30d(volatilityFromWs);
+          }
+          
           console.log('Live Price:', liveData);
         } catch (parseError) {
           console.warn('Error parsing WebSocket message:', parseError);
@@ -154,33 +158,54 @@ const VolatilityTradingPlatform = () => {
     return trade.lots * volatilityDiff * trade.leverage;
   };
 
-  const handleTrade = () => {
-    if (!tradeForm.lots || tradeForm.lots <= 0) return;
+  const handleBuyTrade = () => {
+    const stdevValue = parseFloat(stdev.replace('%', ''));
+    const tradeCost = stdevValue * numSlots;
+    
+    if (accountBalance < tradeCost) {
+      alert('Insufficient balance for this trade');
+      return;
+    }
 
-    const currentVol = tradeForm.timeframe === '7d' ? currentVol7d : currentVol30d;
+    const currentVol = selectedTimeframe === '7d' ? currentVol7d : currentVol30d;
     const newTrade = {
       id: Date.now(),
-      direction: tradeForm.direction,
-      lots: tradeForm.lots,
-      leverage: tradeForm.leverage,
+      direction: 'long' as const,
+      lots: numSlots,
+      leverage: 1,
       strikeVol: currentVol,
-      timeframe: tradeForm.timeframe,
+      timeframe: selectedTimeframe as '7d' | '30d',
       timestamp: new Date().toLocaleString(),
       entryTime: Date.now()
     };
-
+    
     setTrades([...trades, newTrade]);
-    setShowTradeModal(false);
-    setTradeForm({ 
-      direction: 'long', 
-      lots: 0,
+    setAccountBalance(accountBalance - tradeCost);
+  };
+
+  const handleSellTrade = () => {
+    const stdevValue = parseFloat(stdev.replace('%', ''));
+    const tradeCost = stdevValue * numSlots;
+    
+    if (accountBalance < tradeCost) {
+      alert('Insufficient balance for this trade');
+      return;
+    }
+
+    const currentVol = selectedTimeframe === '7d' ? currentVol7d : currentVol30d;
+    const newTrade = {
+      id: Date.now(),
+      direction: 'short' as const,
+      lots: numSlots,
       leverage: 1,
       strikeVol: currentVol,
-      timeframe: '7d',
-      entryTime: Date.now(),
+      timeframe: selectedTimeframe as '7d' | '30d',
       timestamp: new Date().toLocaleString(),
-      id: Date.now()  
-    });
+      entryTime: Date.now()
+    };
+    
+    setTrades([...trades, newTrade]);
+    setAccountBalance(accountBalance - tradeCost);
   };
 
   const closeTrade = (tradeId: number) => {
@@ -305,95 +330,18 @@ const VolatilityTradingPlatform = () => {
           <Button
             className='bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 px-3 py-3 rounded-lg text-xs font-semibold transition-all duration-200 text-white w-full'
             buttonTitle="Buy"
-            onClick={() => setShowTradeModal(true)} 
+            onClick={() => handleBuyTrade()} 
           />
           <Button
             className='bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 px-3 py-3 rounded-lg text-xs font-semibold transition-all duration-200 text-white w-full'
             buttonTitle="Sell"
-            onClick={() => setShowTradeModal(true)} 
+            onClick={() => handleSellTrade()} 
           />
         </div>
         </div>
 
-        <div className="flex gap-4 mb-8 w-full">
-          <div className="w-1/2 min-w-0">
-            <Card cardTitle='Historical Volatility (Last 60 Days)' description={
-              <div className="w-full">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex gap-2">
-                <Button
-                  buttonTitle='7D'
-                  onClick={() => setSelectedTimeframe('7d')}
-                  className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors ${
-                    selectedTimeframe === '7d' 
-                      ? 'bg-blue-500 text-white' 
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
-                />
-                <Button
-                  buttonTitle='30D'
-                  onClick={() => setSelectedTimeframe('30d')}
-                  className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors ${
-                    selectedTimeframe === '30d' 
-                      ? 'bg-green-500 text-white' 
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
-                />
-              </div>
-            </div>
-            
-            {/* Chart with candlestick visualization */}
-            <div className="h-64 mt-4 w-full">
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={historicalData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="#9CA3AF"
-                    fontSize={10}
-                    interval="preserveStartEnd"
-                    tickFormatter={(value) => {
-                      const date = new Date(value);
-                      return `${date.getMonth() + 1}/${date.getDate()}`;
-                    }}
-                  />
-                  <YAxis 
-                    stroke="#9CA3AF"
-                    fontSize={12}
-                    domain={['dataMin - 2', 'dataMax + 2']}
-                  />
-                  <Tooltip content={<CandlestickTooltip />} />
-                  <Line 
-                    type="monotone" 
-                    dataKey={'vol' + selectedTimeframe + '_close'}
-                    stroke={selectedTimeframe === '7d' ? '#3B82F6' : '#10B981'}
-                    strokeWidth={2}
-                    dot={{ fill: selectedTimeframe === '7d' ? '#3B82F6' : '#10B981', strokeWidth: 2, r: 3 }}
-                    activeDot={{ r: 5, stroke: selectedTimeframe === '7d' ? '#3B82F6' : '#10B981', strokeWidth: 2 }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey={'vol' + selectedTimeframe + '_high'}
-                    stroke={selectedTimeframe === '7d' ? '#60A5FA' : '#34D399'}
-                    strokeWidth={1}
-                    strokeDasharray="2 2"
-                    dot={false}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey={'vol' + selectedTimeframe + '_low'}
-                    stroke={selectedTimeframe === '7d' ? '#60A5FA' : '#34D399'}
-                    strokeWidth={1}
-                    strokeDasharray="2 2"
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-              </div>
-            } />
-          </div>
-          <div className="w-1/2">
+        <div className="w-full">
+          <div className="w-full">
             <Card 
               cardTitle='Portfolio Summary'
               description={
@@ -401,10 +349,11 @@ const VolatilityTradingPlatform = () => {
                   <div className="space-y-4">
                     <List 
                       listItems={[
+                        `Total Account Balance: $${accountBalance.toFixed(2)}`,
                         `Total P&L: ${totalPnL.toFixed(2)}%`,
                         `Open Positions: ${trades.length}`,
                         `Total Lots: ${trades.reduce((sum, trade) => sum + trade.lots, 0)}`,
-                        `Total Exposure: ${trades.reduce((sum, trade) => sum + trade.lots * trade.leverage * 20, 0)}`
+                        `Total Exposure: ${trades.reduce((sum, trade) => sum + trade.lots * parseFloat(stdev), 0)}`
                       ]}
                     />
                   </div>
@@ -413,27 +362,6 @@ const VolatilityTradingPlatform = () => {
             />
           </div>
         </div>
-      <Card cardClassNames="mb-8" cardTitle='Current BTC Volatility' description={
-        <div className='flex justify-between items-center'>
-          <div className='flex gap-8 items-center'>          
-            <div className="text-sm">
-              <div className="text-gray-400">7-Day Annualized</div>
-              <span className="text-2xl font-bold text-blue-400">{currentVol7d.toFixed(2)}%</span>
-            </div>
-            <div className="text-sm">
-              <div className="text-gray-400">30-Day Annualized</div>
-              <span className="text-2xl font-bold text-green-400">{currentVol30d.toFixed(2)}%</span>
-            </div>
-          </div>
-          <Button 
-            className='bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2 text-white'
-            buttonTitle="New Trade"
-            buttonIcon={Plus}
-            onClick={() => setShowTradeModal(true)} 
-          />
-        </div>
-      }/>
-        
       </div>
     </div>
   )
