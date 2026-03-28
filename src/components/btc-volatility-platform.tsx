@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown, BarChart3, Plus } from 'lucide-react';
 import Card from '../assets/common/card';
 import Button from 'app/assets/common/button';
 import List from 'app/assets/common/list';
+import { createVolatilityWebSocket } from 'app/services/api';
 
 export interface Trade {
   id: number;
@@ -99,7 +100,7 @@ const VolatilityTradingPlatform = ({ symbol }: PlatformProps) => {
   useEffect(() => {
     try {
       // Create WebSocket connection
-      wsRef.current = new WebSocket(`ws://localhost:8000/ws/${symbol}?days=${selectedDays}`);
+      wsRef.current = createVolatilityWebSocket(symbol, selectedDays);
 
       // Connection opened
       wsRef.current.onopen = () => {
@@ -130,7 +131,7 @@ const VolatilityTradingPlatform = ({ symbol }: PlatformProps) => {
 
       // Handle errors
       wsRef.current.onerror = (error) => {
-        console.warn(`WebSocket connection error - using mock data. Server not available at ws://localhost:8000/ws/${symbol}`);
+        console.warn(`WebSocket connection error - using mock data. Server may not be available.`);
       };
 
       // Handle connection closed

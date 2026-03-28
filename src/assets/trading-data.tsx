@@ -1,8 +1,8 @@
 
 import { useEffect, useState } from "react";
 import { tradingData } from "../../data";
-import axios from "axios";
 import Card from "app/assets/common/card";
+import { getCommodity, CommodityData } from "app/services/api";
 
 interface TradingData {
     Close: number,
@@ -19,24 +19,22 @@ interface TradingDataProps{
 const TradingData = (props: TradingDataProps) => {
     const {commodityId} = props;
     const [inputCommodity, setInputCommodity] = useState<string>("");
-    const apiURL = `http://127.0.0.1:8000/commodity/${commodityId}`
     const lastFivePoints = tradingData.slice(Math.max(tradingData.length - 5, 1));
-    const [dataPoints, setDataPoints] = useState<TradingData[]>([]);
+    const [dataPoints, setDataPoints] = useState<CommodityData[]>([]);
 
     const fetchData = async () => {
-        axios
-            .get(`http://127.0.0.1:8000/commodity/${commodityId}`)
-            .then((response) => {
-                setDataPoints(response.data)
-                console.log(response.data);
+        getCommodity(commodityId)
+            .then((data) => {
+                setDataPoints(data);
+                console.log(data);
             })
             .catch((error) => {
-                setDataPoints([])
+                setDataPoints([]);
                 console.log(error);
             });
     }
 
-    useEffect(() => { fetchData() }, [apiURL])
+    useEffect(() => { fetchData() }, [commodityId])
     function getStandardDeviation(array: any[]) {
         const n = array.length
         const mean = array.reduce((a: number, b: number) => a + b, 0) / n

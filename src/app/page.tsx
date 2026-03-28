@@ -7,6 +7,7 @@ import Table, { TableColumn } from "app/assets/common/table";
 import Card from "app/assets/common/card";
 import Header from "app/assets/common/header";
 import Footer from "app/assets/common/footer";
+import { getPortfolio, PositionData } from "app/services/api";
 
 const instruments = [
   { name: "BTC-USD", description: "Bitcoin / US Dollar" },
@@ -16,15 +17,6 @@ const instruments = [
   { name: "DOGE-USD", description: "Dogecoin / US Dollar" },
 ];
 
-interface PositionRow {
-  commodity: string;
-  quantity: number;
-  purchasePrice: number;
-  pnl: number;
-  lockedMargin: number;
-  [key: string]: unknown;
-}
-
 const fmt = (n: number) => {
   const prefix = n >= 0 ? (n > 0 ? "+$" : "$") : "-$";
   return `${prefix}${Math.abs(n).toFixed(2)}`;
@@ -32,7 +24,7 @@ const fmt = (n: number) => {
 
 const fmtUsd = (n: number) => `$${n.toFixed(2)}`;
 
-const positionColumns: TableColumn<PositionRow>[] = [
+const positionColumns: TableColumn<PositionData>[] = [
   { key: "commodity", label: "Commodity" },
   { key: "quantity", label: "Quantity" },
   {
@@ -56,12 +48,11 @@ const positionColumns: TableColumn<PositionRow>[] = [
 ];
 
 export default function Home() {
-  const [positions, setPositions] = useState<PositionRow[]>([]);
+  const [positions, setPositions] = useState<PositionData[]>([]);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/portfolio")
-      .then((res) => res.json())
-      .then((data: PositionRow[]) => {
+    getPortfolio()
+      .then((data) => {
         setPositions(data);
       })
       .catch((err) => console.error("Failed to fetch portfolio:", err));
