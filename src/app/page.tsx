@@ -73,9 +73,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      <Breadcrumb items={[{ label: "Home" }]} />
-
       <Header />
+      <Breadcrumb items={[{ label: "Home" }]} />
 
       {/* Cards grid */}
       <main className="px-6 pb-12 max-w-6xl mx-auto">
