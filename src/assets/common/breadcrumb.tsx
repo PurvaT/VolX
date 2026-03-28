@@ -1,38 +1,31 @@
-//breadcrumb component
-"use client";
-import { useRouter } from 'next/router';
-import Link from 'next/link';
-import React from 'react';
-import styles from "../../styles/Home.module.css";
-import { useParams, usePathname } from 'next/navigation';
+import Link from "next/link";
 
-interface BreadcrumbProps {
-  separator?: string;
+export interface BreadcrumbItem {
+  label: string;
+  href?: string;
 }
 
-const Breadcrumb: React.FC<BreadcrumbProps> = ({ separator = ' / ' }) => {
-  const router = useRouter();
-  const path = usePathname();
-  const pathnames = router.pathname.split('/').filter((x) => x);
-  console.log("path = " ,path)
+interface BreadcrumbProps {
+  items: BreadcrumbItem[];
+}
 
+const Breadcrumb = ({ items }: BreadcrumbProps) => {
   return (
-    <nav aria-label="breadcrumb">
-      <ul className="breadcrumb">
-      <nav className={styles.breadcrumb}>
-        <Link href="/">Home</Link>
-      </nav>
-        {pathnames.map((value, index) => {
-          const href = `/${pathnames.slice(0, index + 1).join('/')}`;
-
-          return (
-            <li key={href} className="breadcrumb-item">
-              <Link href={href}>{value}</Link>
-              {index < pathnames.length - 1 && <span>{separator}</span>}
-            </li>
-          );
-        })}
-      </ul>
+    <nav className="bg-gray-900 px-6 py-3 text-sm text-gray-400 border-b border-gray-700">
+      <ol className="flex items-center gap-2">
+        {items.map((item, index) => (
+          <li key={index} className={item.href ? "" : "text-gray-200"}>
+            {item.href ? (
+              <Link href={item.href} className="text-blue-400 hover:text-blue-300 transition-colors">
+                {item.label}
+              </Link>
+            ) : (
+              item.label
+            )}
+            {index < items.length - 1 && <span className="ml-2">/</span>}
+          </li>
+        ))}
+      </ol>
     </nav>
   );
 };
