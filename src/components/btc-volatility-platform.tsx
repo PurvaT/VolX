@@ -17,7 +17,11 @@ export interface Trade {
   entryTime: number;
 }
 
-const VolatilityTradingPlatform = () => {
+interface PlatformProps {
+  symbol: string;
+}
+
+const VolatilityTradingPlatform = ({ symbol }: PlatformProps) => {
   const wsRef = useRef<WebSocket | null>(null);
 
   const [currentVol7d, setCurrentVol7d] = useState(20);
@@ -95,7 +99,7 @@ const VolatilityTradingPlatform = () => {
   useEffect(() => {
     try {
       // Create WebSocket connection
-      wsRef.current = new WebSocket(`ws://localhost:8000/ws/BTC-USD?days=${selectedDays}`);
+      wsRef.current = new WebSocket(`ws://localhost:8000/ws/${symbol}?days=${selectedDays}`);
 
       // Connection opened
       wsRef.current.onopen = () => {
@@ -126,7 +130,7 @@ const VolatilityTradingPlatform = () => {
 
       // Handle errors
       wsRef.current.onerror = (error) => {
-        console.warn('WebSocket connection error - using mock data. Server not available at ws://localhost:8000/ws/BTC-USD');
+        console.warn(`WebSocket connection error - using mock data. Server not available at ws://localhost:8000/ws/${symbol}`);
       };
 
       // Handle connection closed
@@ -275,9 +279,9 @@ const VolatilityTradingPlatform = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
-            BTC Volatility Trading Platform
+            {symbol} Volatility Trading Platform
           </h1>
-          <p className="text-gray-300">Trade Bitcoin volatility with real-time data and analytics</p>
+          <p className="text-gray-300">Trade {symbol} volatility with real-time data and analytics</p>
           <div className="flex gap-2 mt-4">
             <Button
               buttonTitle='7D'
